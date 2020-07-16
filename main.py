@@ -51,17 +51,6 @@ def get_rank(cell):
   assert isinstance(cell, Cell)
   return 1 + get_rank(cell.nw)
 
-# Cell construction memoization table.
-memo_table = {}
-
-def cell(rank, nw, ne, sw, se):
-  assert rank > 1
-  assert rank-1 == get_rank(nw) == get_rank(ne) == get_rank(sw) == get_rank(se)
-  if (nw, ne, sw, se) in memo_table:
-    return memo_table[(nw, ne, sw, se)]
-  x = memo_table[(nw, ne, sw, se)] = Cell(nw, ne, sw, se)
-  return x
-
 def to_board_iter(rank: int, cell: Cell):
   assert rank == get_rank(cell)
   if rank == 1:
@@ -75,6 +64,32 @@ def to_board_iter(rank: int, cell: Cell):
 
 def to_board(rank: int, cell):
   return [list(line) for line in to_board_iter(rank, cell)]
+
+def from_board(rank, board):
+  assert rank > 0
+  assert 1 << rank == len(board) == len(board[0])
+  if rank == 1:
+    return (board[0][0] | board[0][1]<<1 | board[1][0]<<2 | board[1][1]<<3)
+  #TODO: implement this
+  size = 1 << (rank-1)
+  return cell(rank,
+              from_board(rank-1, [line[:size] for line in board[:size]]),
+              from_board(rank-1, [line[size:] for line in board[:size]]),
+              from_board(rank-1, [line[:size] for line in board[size:]]),
+              from_board(rank-1, [line[size:] for line in board[size:]])
+  )
+
+
+# Cell construction memoization table.
+memo_table = {}
+
+def cell(rank, nw, ne, sw, se):
+  assert rank > 1
+  assert rank-1 == get_rank(nw) == get_rank(ne) == get_rank(sw) == get_rank(se)
+  if (nw, ne, sw, se) in memo_table:
+    return memo_table[(nw, ne, sw, se)]
+  x = memo_table[(nw, ne, sw, se)] = Cell(nw, ne, sw, se)
+  return x
 
 def result(rank: int, cell: Cell):
   assert rank > 1
@@ -97,3 +112,6 @@ def result(rank: int, cell: Cell):
 # Examples
 a1 = 0b0101
 a2 = cell(2,a1,a1,a1,a1)
+chess = [[(i+j)%2 for i in range(0,8)] for j in range(0,8)]
+assert chess == to_board(3, from_board(3, chess))
+
