@@ -20,7 +20,7 @@ def nextState(board, x, y):
   next_state = 1 if (lifecounter == 3 or (lifecounter == 2 and current_state)) else 0
   return next_state
 
-def hashLife(board):
+def step(board):
   next_board = [[0, 0], [0, 0]]
   for x in (1,2):
     for y in (1,2):
@@ -44,7 +44,6 @@ class Cell:
   def __hash__(self): return id(self)
   def __repr__(self):
     return f"Cell({self.nw},{self.ne},{self.sw},{self.se})"
-#    return "Cell({},{},{},{})" % (self.nw, self.ne, self.sw, self.se)
 
 def get_rank(cell):
   if isinstance(cell, int): return 1
@@ -57,30 +56,18 @@ def to_board_iter(rank: int, cell: Cell):
     assert isinstance(cell, int)
     return [[cell>>0&1, cell>>1&1],
             [cell>>2&1, cell>>3&1]]
-  nw, ne, sw, se = (to_board_iter(rank-1, cell.nw), to_board_iter(rank-1, cell.ne),
-                    to_board_iter(rank-1, cell.sw), to_board_iter(rank-1, cell.se))
+  nw, ne, sw, se = (to_board_iter(rank-1, cell.nw),
+                    to_board_iter(rank-1, cell.ne),
+                    to_board_iter(rank-1, cell.sw), 
+                    to_board_iter(rank-1, cell.se))
   return itertools.chain(map(itertools.chain, nw, ne),
                          map(itertools.chain, sw, se))
 
 def to_board(rank: int, cell):
   return [list(line) for line in to_board_iter(rank, cell)]
 
-def from_board(rank, board):
-  assert rank > 0
-  assert 1 << rank == len(board) == len(board[0])
-  if rank == 1:
-    return (board[0][0] | board[0][1]<<1 | board[1][0]<<2 | board[1][1]<<3)
-  #TODO: implement this
-  size = 1 << (rank-1)
-  return cell(rank,
-              from_board(rank-1, [line[:size] for line in board[:size]]),
-              from_board(rank-1, [line[size:] for line in board[:size]]),
-              from_board(rank-1, [line[:size] for line in board[size:]]),
-              from_board(rank-1, [line[size:] for line in board[size:]])
-  )
-
 
-# Cell construction memoization table.
+# ----- CONSTRUCTING CELLS -----
 memo_table = {}
 
 def cell(rank, nw, ne, sw, se):
@@ -91,6 +78,21 @@ def cell(rank, nw, ne, sw, se):
   x = memo_table[(nw, ne, sw, se)] = Cell(nw, ne, sw, se)
   return x
 
+def from_board(rank, board):
+  assert rank > 0
+  assert 1 << rank == len(board) == len(board[0])
+  if rank == 1:
+    return (board[0][0] | board[0][1]<<1 | board[1][0]<<2 | board[1][1]<<3)
+  size = 1 << (rank-1)
+  return cell(rank,
+              from_board(rank-1, [line[:size] for line in board[:size]]),
+              from_board(rank-1, [line[size:] for line in board[:size]]),
+              from_board(rank-1, [line[:size] for line in board[size:]]),
+              from_board(rank-1, [line[size:] for line in board[size:]])
+  )
+
+
+# ----- THE HASHLIFE ALGORITHM -----
 def result(rank: int, cell: Cell):
   assert rank > 1
   assert isinstance(cell, Cell)
@@ -101,7 +103,9 @@ def result(rank: int, cell: Cell):
   if rank == 2:
     # 4x4 cell; nw, ne, sw, se are all integers.
     # Just perform the simulation.
-    assert False #TODO: implement
+    board = to_board(2, cell)
+    next_inner = step(board)
+    result = from_board(1, next_inner)
   else:
     # Run the hashlife algorithm.
     assert False #TODO: implement
@@ -109,9 +113,18 @@ def result(rank: int, cell: Cell):
   return result
 
 
-# Examples
+# ----- EXAMPLES -----
 a1 = 0b0101
 a2 = cell(2,a1,a1,a1,a1)
 chess = [[(i+j)%2 for i in range(0,8)] for j in range(0,8)]
 assert chess == to_board(3, from_board(3, chess))
 
+# cell:
+# 1010
+# 1010
+# 1010
+# 1010
+#result(2, cell)
+# result:
+#  01
+#  01
