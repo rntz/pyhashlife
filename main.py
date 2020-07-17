@@ -70,7 +70,7 @@ def to_board(rank: int, cell):
 # ----- CONSTRUCTING CELLS -----
 memo_table = {}
 
-def cell(rank, nw, ne, sw, se):
+def make_cell(rank, nw, ne, sw, se):
   assert rank > 1
   assert rank-1 == get_rank(nw) == get_rank(ne) == get_rank(sw) == get_rank(se)
   if (nw, ne, sw, se) in memo_table:
@@ -84,7 +84,7 @@ def from_board(rank, board):
   if rank == 1:
     return (board[0][0] | board[0][1]<<1 | board[1][0]<<2 | board[1][1]<<3)
   size = 1 << (rank-1)
-  return cell(rank,
+  return make_cell(rank,
               from_board(rank-1, [line[:size] for line in board[:size]]),
               from_board(rank-1, [line[size:] for line in board[:size]]),
               from_board(rank-1, [line[:size] for line in board[size:]]),
@@ -105,26 +105,82 @@ def result(rank: int, cell: Cell):
     # Just perform the simulation.
     board = to_board(2, cell)
     next_inner = step(board)
-    result = from_board(1, next_inner)
+    res = from_board(1, next_inner)
   else:
     # Run the hashlife algorithm.
-    assert False #TODO: implement
-  cell.result = result
-  return result
+    # First make our overlapping nine quads.
+    n = make_cell(rank-1, nw.ne, ne.nw, nw.se, ne.sw)
+    w = make_cell(rank-1, nw.sw, nw.se, ne.sw, ne.se)
+    c = make_cell(rank-1, nw.se, ne.sw, sw.ne, se.nw)
+    e = make_cell(rank-1, ne.sw, ne.se, se.nw, se.ne)
+    s = make_cell(rank-1, sw.ne, se.nw, sw.se, se.sw)
+    # Now find their results.
+    nwr, nr, ner, wr, cr, er, swr, sr, ser = \
+      [result(rank-1, cell) for cell in (nw, n, ne, w, c, e, sw, s, se)]
+    # Now combine the results into four overlapping quads.
+    nw = make_cell(rank-1, nwr, nr, wr, cr)
+    ne = make_cell(rank-1, nr, ner, cr, er)
+    sw = make_cell(rank-1, wr, cr, swr, sr)
+    se = make_cell(rank-1, cr, er, sr, ser)
+    # Combine the results of these four quads to get our final result.
+    res = make_cell(rank-1, *(result(rank-1, cell) for cell in (nw, ne, sw, se)))
+  cell.result = res
+  return res
 
 
 # ----- EXAMPLES -----
 a1 = 0b0101
-a2 = cell(2,a1,a1,a1,a1)
+a2 = make_cell(2,a1,a1,a1,a1)
 chess = [[(i+j)%2 for i in range(0,8)] for j in range(0,8)]
 assert chess == to_board(3, from_board(3, chess))
 
+# ----- Rank 2 works -----
 # cell:
 # 1010
 # 1010
 # 1010
 # 1010
-#result(2, cell)
+# result(2, cell)
 # result:
 #  01
 #  01
+assert 0b1010 == result(2, from_board(2, [[1, 0] * 2] * 4))
+
+# ----- Rank 3 works -----
+# cell:
+# 10101010
+# 10101010
+# 10101010
+# 10101010
+# 10101010
+# 10101010
+# 10101010
+# 10101010
+#
+# steps to:
+#  010101
+#  010101
+#  010101
+#  010101
+#  010101
+#  010101
+#
+# steps to result(3, cell):
+#   1010
+#   1010
+#   1010
+#   1010
+assert (from_board(2, [[1,0] * 2] * 4)
+  == result(3, from_board(3, [[1,0] * 4] * 8)))
+
+# ----- Rank 3 All 1's goes to all 0's -----
+
+assert (from_board(2, [[0] * 4] * 4)
+  == result(3, from_board(3, [[1] * 8] * 8)))
+
+# ----- Rank 3 Glider -----
+
+
+# 111
+# 100
+# 010
