@@ -110,7 +110,7 @@ def result(rank: int, cell: Cell):
     # Run the hashlife algorithm.
     # First make our overlapping nine quads.
     n = make_cell(rank-1, nw.ne, ne.nw, nw.se, ne.sw)
-    w = make_cell(rank-1, nw.sw, nw.se, ne.sw, ne.se)
+    w = make_cell(rank-1, nw.sw, nw.se, sw.nw, sw.ne)
     c = make_cell(rank-1, nw.se, ne.sw, sw.ne, se.nw)
     e = make_cell(rank-1, ne.sw, ne.se, se.nw, se.ne)
     s = make_cell(rank-1, sw.ne, se.nw, sw.se, se.sw)
@@ -170,17 +170,85 @@ assert 0b1010 == result(2, from_board(2, [[1, 0] * 2] * 4))
 #   1010
 #   1010
 #   1010
-assert (from_board(2, [[1,0] * 2] * 4)
-  == result(3, from_board(3, [[1,0] * 4] * 8)))
+assert ([[1,0] * 2] * 4 
+  == to_board(2, result(3, from_board(3, [[1,0] * 4] * 8))))
 
 # ----- Rank 3 All 1's goes to all 0's -----
 
-assert (from_board(2, [[0] * 4] * 4)
-  == result(3, from_board(3, [[1] * 8] * 8)))
+assert ([[0] * 4] * 4
+  == to_board(2, result(3, from_board(3, [[1] * 8] * 8))))
 
 # ----- Rank 3 Glider -----
 
+# 00000000
+# 00000000
+# 00000000
+# 00000000
+# 00011100
+# 00010000
+# 00001000
+# 00000000
 
-# 111
-# 100
-# 010
+# steps to
+#  000000
+#  000000
+#  000100
+#  001100
+#  001010
+#  000000
+
+# steps to result(3, cell):
+#   0000
+#   0110
+#   0101
+#   0100
+
+rows = ([[0] * 8] * 4
+        + [[0, 0, 0, 1, 1, 1, 0, 0],
+           [0, 0, 0, 1, 0, 0, 0, 0],
+           [0, 0, 0, 0, 1, 0, 0, 0]]
+        + [[0] * 8])
+
+expected = [
+  [0, 0, 0, 0],
+  [0, 1, 1, 0],
+  [0, 1, 0, 1],
+  [0, 1, 0, 0]]
+
+assert (expected == to_board(2, result(3, from_board(3, rows))))
+
+# ----- Rank 4 -----
+
+blank_row = [0] * 16
+test_board = [
+  blank_row,
+  blank_row,
+  blank_row,
+  blank_row,
+  blank_row,
+  blank_row,
+  [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+  blank_row,
+  blank_row,
+  blank_row,
+  blank_row,
+  blank_row,
+  blank_row,
+  blank_row,
+  ]
+
+blank_row_8 = [0] * 8
+expected_board = [
+  blank_row_8,
+  [0, 0, 1, 0, 1, 0, 0, 0],
+  [0, 1, 0, 0, 1, 0, 0, 0],
+  [0, 1, 0, 0, 1, 0, 0, 0],
+  [0, 0, 1, 1, 0, 0, 0, 0],
+  blank_row_8,
+  blank_row_8,
+  blank_row_8,
+  ]
+
+assert (expected_board == to_board(3, result(4, from_board(4, test_board))))
