@@ -2,7 +2,7 @@
 # exactly 3, become alive
 import itertools
 
-# Finds the next state of the sell at the coordinates (x,y).
+# Finds the next state of the cell at the coordinates (x,y).
 def nextState(board, x, y):
   lifecounter = 0
   for i in (-1, 0, 1):
