@@ -2,13 +2,7 @@
 # exactly 3, become alive
 import itertools
 
-board = [
-[0, 1, 0, 0],
-[0, 0, 1, 1],
-[0, 1, 0, 0],
-[0, 0, 1, 0]
-]
-
+# Finds the next state of the sell at the coordinates (x,y).
 def nextState(board, x, y):
   lifecounter = 0
   for i in (-1, 0, 1):
@@ -20,6 +14,7 @@ def nextState(board, x, y):
   next_state = 1 if (lifecounter == 3 or (lifecounter == 2 and current_state)) else 0
   return next_state
 
+# Steps a 4x4 board to a 2x2 board.
 def step(board):
   next_board = [[0, 0], [0, 0]]
   for x in (1,2):
@@ -34,7 +29,7 @@ def step(board):
 #
 # Cells of rank 1 (2x2) are represented by integers.
 #
-# Cells of rank >2 are represented by objects of class Cell.
+# Cells of rank >1 are represented by objects of class Cell.
 class Cell:
   __slots__ = ('nw', 'ne', 'sw', 'se', 'result')
   def __init__(self, nw, ne, sw, se):
@@ -50,6 +45,9 @@ def get_rank(cell):
   assert isinstance(cell, Cell)
   return 1 + get_rank(cell.nw)
 
+def to_board(rank: int, cell):
+  return [list(line) for line in to_board_iter(rank, cell)]
+
 def to_board_iter(rank: int, cell: Cell):
   assert rank == get_rank(cell)
   if rank == 1:
@@ -62,9 +60,6 @@ def to_board_iter(rank: int, cell: Cell):
                     to_board_iter(rank-1, cell.se))
   return itertools.chain(map(itertools.chain, nw, ne),
                          map(itertools.chain, sw, se))
-
-def to_board(rank: int, cell):
-  return [list(line) for line in to_board_iter(rank, cell)]
 
 
 # ----- CONSTRUCTING CELLS -----
@@ -174,12 +169,10 @@ assert ([[1,0] * 2] * 4
   == to_board(2, result(3, from_board(3, [[1,0] * 4] * 8))))
 
 # ----- Rank 3 All 1's goes to all 0's -----
-
 assert ([[0] * 4] * 4
   == to_board(2, result(3, from_board(3, [[1] * 8] * 8))))
 
 # ----- Rank 3 Glider -----
-
 # 00000000
 # 00000000
 # 00000000
